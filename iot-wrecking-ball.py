@@ -3,7 +3,7 @@
 __author__ = "Rodney Beede"
 __copyright__ = "Copyright 2020, Rodney Beede"
 __license__ = "AGPL Version 3"
-__version__ = "1.2020.06.12"
+__version__ = "1.2020.06.24"
 
 
 import argparse
